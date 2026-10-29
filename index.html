@@ -204,7 +204,7 @@ $("run").onclick=async()=>{
      keep.forEach(c=>{if(ci[c]<0)log(`  ⚠️ ${g.f.name} missing "${c}" (left blank).`,"warn");});
      for(const r of g.data)all.push(rowFrom(r,keep,ci,g.city));
    } if(all.length)emit("point",all,keep);}
-  {const keep=KEEP_SALES,m=lut(keep);let all=[];let exCam=0,exSign=0,exName=0,exZero=0;
+  {const keep=KEEP_SALES,m=lut(keep);let all=[];let exCam=0,exSign=0,exName=0,exZero=0,exStar=0;
    for(const g of groups.building){
      const ci={};keep.forEach(c=>ci[c]=g.headers.findIndex(h=>m[loose(h)]===c));
      const iPID=g.headers.findIndex(h=>loose(h)==="projectid");
@@ -212,6 +212,8 @@ $("run").onclick=async()=>{
      const iPS=findH(g.headers,"projectstatus","projectstatus");
      log(iRI>=0?`  Sales filter on "${g.f.name}": Restricted = "${g.headers[iRI]}"`:`  ⚠️ ${g.f.name}: no "Restricted Industries" column — cannot exclude Camisole.`, iRI>=0?null:"warn");
      log(iPS>=0?`  Sales filter on "${g.f.name}": Project Status = "${g.headers[iPS]}"`:`  ⚠️ ${g.f.name}: no "Project Status" column — cannot require Signed/Expired.`, iPS>=0?null:"warn");
+     const iPA=findH(g.headers,"permittedadwords","permitted");
+     log(iPA>=0?`  Sales filter on "${g.f.name}": Permitted = "${g.headers[iPA]}" (non-empty → name gets *)`:`  ⚠️ ${g.f.name}: no "Permitted" column — no * marks added.`, iPA>=0?null:"warn");
      for(const r of g.data){
        if(iRI>=0&&loose(r[iRI]).includes(EXCLUDE_INDUSTRY)){exCam++;continue;}
        if(iPS>=0&&!STATUS_OK.includes(loose(r[iPS]))){exSign++;continue;}
@@ -222,10 +224,11 @@ $("run").onclick=async()=>{
        let total=0;for(const col in DEVICE_MAP){const n=cnt[col]||0;o[col]=n;total+=n;}
        o["Total Screens"]=total;
        if(total<=0){exZero++;continue;}
+       if(iPA>=0&&String(r[iPA]).trim()!==""){o["Project Name"]=String(o["Project Name"]).trim()+"*";exStar++;}
        all.push(o);
      }
    }
-   log(`  → Sales projects excluded: ${exCam} (Camisole), ${exSign} (Status not Signed/Expired), ${exName} (name has "Focus Media"), ${exZero} (Total Screens = 0).`,"ok");
+   log(`  → Sales projects excluded: ${exCam} (Camisole), ${exSign} (Status not Signed/Expired), ${exName} (name has "Focus Media"), ${exZero} (Total Screens = 0). Marked with *: ${exStar} (Permitted not empty).`,"ok");
    if(all.length)emit("sales",all,keep);}
   renderSummary(citySummary(groups));
   log("\nDone. Any ⚠️ above usually means a column name differs in one system — add it to ALIASES (or check DEVICE_MAP) and reload.");
